@@ -18,6 +18,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    // @Cacheable(cacheNames = "employee")
     public List<Employee> findEmployees() {
         System.out.println("fetching from DB");
         return employeeRepository.findAll();

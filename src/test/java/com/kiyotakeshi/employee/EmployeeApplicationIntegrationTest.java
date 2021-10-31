@@ -118,5 +118,45 @@ class EmployeeApplicationIntegrationTest {
     void getEmployees() {
         ResponseEntity<String> response = this.restTemplate.getForEntity(getTestBaseUrl(), String.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        String expected = """
+                [{"id":1,"name":"taro","department":"sales"},{"id":2,"name":"jiro","department":"human resources"}]""";
+        assertEquals(expected, response.getBody());
+
+        ResponseEntity<Employee[]> result = this.restTemplate.getForEntity(getTestBaseUrl(), Employee[].class);
+        assertEquals(2, result.getBody().length);
+        assertEquals("taro", result.getBody()[0].getName());
+
+//        // if check cache @Cacheable at findEmployees()
+//        List<Employee> cachedEmployees = new ArrayList<>();
+//        Set keys = this.redisTemplate.keys("employee*");
+//        keys.forEach(k -> {
+//            ((ArrayList<Employee>) this.redisTemplate.opsForValue().get(k))
+//                    .forEach(
+//                            e -> cachedEmployees.add(e)
+//                    );
+//        });
+//        assertEquals("taro", cachedEmployees.get(0).getName());
+//        assertEquals("sales", cachedEmployees.get(0).getDepartment());
+//        assertEquals("jiro", cachedEmployees.get(1).getName());
+//        assertEquals("human resources", cachedEmployees.get(1).getDepartment());
     }
+
+    @Test
+    void getEmployee() {
+        int employeeId = 1;
+        ResponseEntity<Employee> response = this.restTemplate.getForEntity(getTestBaseUrl() + "/{id}", Employee.class, employeeId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(employeeId, response.getBody().getId());
+        assertEquals("taro", response.getBody().getName());
+        assertEquals("sales", response.getBody().getDepartment());
+
+        // check redis cache
+        var cachedEmployee = (Employee) this.redisTemplate.opsForValue().get("employee::" + employeeId);
+        assertEquals(employeeId, cachedEmployee.getId());
+        assertEquals("taro", cachedEmployee.getName());
+        assertEquals("sales", cachedEmployee.getDepartment());
+    }
+
 }
