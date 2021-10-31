@@ -1,7 +1,7 @@
 package com.kiyotakeshi.employee;
 
 import com.kiyotakeshi.employee.entity.Employee;
-import com.kiyotakeshi.employee.entity.NewEmployee;
+import com.kiyotakeshi.employee.entity.EmployeeRequest;
 import com.kiyotakeshi.employee.repository.EmployeeRepository;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -13,6 +13,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -30,6 +32,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
 @SpringBootTest(webEnvironment = RANDOM_PORT)
@@ -166,7 +169,7 @@ class EmployeeApplicationIntegrationTest {
 
     @Test
     void addEmployee() {
-        var request = new NewEmployee("kendrick", "general affairs");
+        var request = new EmployeeRequest("kendrick", "general affairs");
         ResponseEntity<Employee> response = this.restTemplate.postForEntity(getTestBaseUrl(), request, Employee.class);
         assertEquals("kendrick", response.getBody().getName());
 
@@ -176,5 +179,31 @@ class EmployeeApplicationIntegrationTest {
         // @see src/test/resources/db/schema-postgresql.sql
         assertEquals(101, found.getId());
         assertEquals("general affairs", found.getDepartment());
+    }
+
+    @Test
+    void updateEmployee() {
+        int employeeId = 1;
+        var request = new EmployeeRequest("name-update", "vice president");
+
+        // this.restTemplate.put(getTestBaseUrl() + "/{id}", request, 1);
+        // @see https://github.com/spring-projects/spring-boot/issues/12009#issuecomment-365051611
+        ResponseEntity<Employee> response = this.restTemplate.exchange(
+                getTestBaseUrl() + "/{id}",
+                HttpMethod.PUT,
+                new HttpEntity<EmployeeRequest>(request),
+                Employee.class, employeeId);
+
+        assertEquals(request.getName(), response.getBody().getName());
+
+        // check postgres
+        var fromDB = employeeRepository.findById(employeeId).orElseThrow();
+        assertNotNull(fromDB);
+        assertEquals(request.getDepartment(), fromDB.getDepartment());
+
+        // check redis cache
+        var cachedEmployee = (Employee) this.redisTemplate.opsForValue().get("employee::" + employeeId);
+        assertEquals(request.getName(), cachedEmployee.getName());
+        assertEquals(request.getDepartment(), cachedEmployee.getDepartment());
     }
 }

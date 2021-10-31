@@ -2,7 +2,7 @@ package com.kiyotakeshi.employee.entity;
 
 import javax.validation.constraints.NotNull;
 
-public class NewEmployee {
+public class EmployeeRequest {
 
     @NotNull
     private String name;
@@ -10,7 +10,7 @@ public class NewEmployee {
     @NotNull
     private String department;
 
-    public NewEmployee(String name, String department) {
+    public EmployeeRequest(String name, String department) {
         this.name = name;
         this.department = department;
     }

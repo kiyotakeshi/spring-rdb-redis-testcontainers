@@ -1,13 +1,14 @@
 package com.kiyotakeshi.employee.contoller;
 
 import com.kiyotakeshi.employee.entity.Employee;
+import com.kiyotakeshi.employee.entity.EmployeeRequest;
 import com.kiyotakeshi.employee.service.EmployeeService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 
 @RestController
@@ -27,15 +28,27 @@ public class EmployeesController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Employee> getEmployee(@PathVariable Integer id) {
+    public ResponseEntity<Employee> getEmployee(@PathVariable int id) {
         Employee employee = employeeService.findEmployeeById(id);
         return ResponseEntity.ok().body(employee);
     }
 
     @PostMapping
-    public ResponseEntity<Employee> addEmployee(@RequestBody NewEmployee newEmployee) {
-        var employee = new Employee(newEmployee.getName(), newEmployee.getDepartment());
+    public ResponseEntity<Employee> addEmployee(@RequestBody EmployeeRequest request) {
+        var employee = new Employee(request.getName(), request.getDepartment());
         Employee saved = employeeService.save(employee);
         return ResponseEntity.ok().body(saved);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateEmployee(@PathVariable int id, @RequestBody EmployeeRequest request) {
+        Employee update = employeeService.update(id, request);
+        try {
+            return ResponseEntity
+                    .created(new URI("/employees/" + update.getId()))
+                    .body(update);
+        } catch (URISyntaxException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

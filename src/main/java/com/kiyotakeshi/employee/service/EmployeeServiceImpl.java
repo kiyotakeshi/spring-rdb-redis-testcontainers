@@ -1,8 +1,10 @@
 package com.kiyotakeshi.employee.service;
 
 import com.kiyotakeshi.employee.entity.Employee;
+import com.kiyotakeshi.employee.entity.EmployeeRequest;
 import com.kiyotakeshi.employee.exception.ResourceNotFoundException;
 import com.kiyotakeshi.employee.repository.EmployeeRepository;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -36,5 +38,18 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Employee save(Employee employee) {
         return employeeRepository.save(employee);
+    }
+
+    @Override
+    @CachePut(value = "employee", key = "#id")
+    public Employee update(int id, EmployeeRequest request) {
+        var existingEmployee = this.findEmployeeById(id);
+        System.out.println("updating employee with name:" + existingEmployee.getName());
+
+        // update
+        existingEmployee.setName(request.getName());
+        existingEmployee.setDepartment(request.getDepartment());
+
+        return this.save(existingEmployee);
     }
 }
