@@ -27,8 +27,8 @@ public class SpringFoxConfiguration {
 
 	private ApiInfo metaData() {
 		return new ApiInfoBuilder()
-				.title("employee service with redis")
-				.description("Spring Boot REST API using redis")
+				.title("spring-rdb-redis-testcontainers")
+				.description("Spring Boot REST API using postgres and redis")
 				.version("0.0.1")
 				.contact(new Contact("kiyotakeshi", "https://github.com/kiyotakeshi", "kiyotatakeshi.work@gmail.com"))
 				.build();

@@ -1,10 +1,8 @@
 # spring-rdb-redis-testcontainers
 
-## WIP:
-
 ## setup
 
-- run redis container
+- run postgres and redis container
 
 ```shell
 docker compose up -d
@@ -14,6 +12,8 @@ docker compose up -d
 
 - access [http://localhost:8081/swagger-ui/](http://localhost:8081/swagger-ui/)
     - you can test api using Swagger UI
+
+- you also can use [postman collection](./postman) 
 
 ---
 ## redis playground
