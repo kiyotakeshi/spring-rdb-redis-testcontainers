@@ -20,7 +20,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     // @Cacheable(cacheNames = "employee")
     public List<Employee> findEmployees() {
-        System.out.println("fetching from DB");
+        // System.out.println("fetching from DB");
         return employeeRepository.findAll();
     }
 
@@ -31,5 +31,10 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employeeRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("employee not found:" + id)
         );
+    }
+
+    @Override
+    public Employee save(Employee employee) {
+        return employeeRepository.save(employee);
     }
 }

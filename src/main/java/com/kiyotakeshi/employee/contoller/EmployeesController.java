@@ -21,14 +21,21 @@ public class EmployeesController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getEmployees() {
+    public ResponseEntity<List<Employee>> getEmployees() {
         List<Employee> employeeList = employeeService.findEmployees();
         return ResponseEntity.ok().body(employeeList);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getEmployee(@PathVariable Integer id) {
+    public ResponseEntity<Employee> getEmployee(@PathVariable Integer id) {
         Employee employee = employeeService.findEmployeeById(id);
         return ResponseEntity.ok().body(employee);
+    }
+
+    @PostMapping
+    public ResponseEntity<Employee> addEmployee(@RequestBody NewEmployee newEmployee) {
+        var employee = new Employee(newEmployee.getName(), newEmployee.getDepartment());
+        Employee saved = employeeService.save(employee);
+        return ResponseEntity.ok().body(saved);
     }
 }

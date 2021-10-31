@@ -15,7 +15,7 @@ public class EmployeeTests {
     TestEntityManager em;
 
     @Test
-    @DisplayName("Test find employee from initialized data in data.sql")
+    @DisplayName("Test find employee from initialized data in schema-h2.sql")
     void find() {
         var employee = em.find(Employee.class, 1);
         var employee2 = em.find(Employee.class, 2);

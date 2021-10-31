@@ -1,5 +1,8 @@
 package com.kiyotakeshi.employee;
 
+import com.kiyotakeshi.employee.entity.Employee;
+import com.kiyotakeshi.employee.entity.NewEmployee;
+import com.kiyotakeshi.employee.repository.EmployeeRepository;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,6 +48,9 @@ class EmployeeApplicationIntegrationTest {
     @Autowired
     private RedisTemplate redisTemplate;
 
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
     @Container
     private static final GenericContainer REDIS =
             new GenericContainer(DockerImageName.parse("redis:6.2.6-alpine")).withExposedPorts(6379);
@@ -53,8 +59,7 @@ class EmployeeApplicationIntegrationTest {
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(DockerImageName.parse("postgres:11.10-alpine"))
             .withUsername("testcontainers")
             .withPassword("passw0rd!")
-            .withDatabaseName("testcontainers")
-            .withInitScript("db/for-it.sql");
+            .withDatabaseName("testcontainers");
 
     @DynamicPropertySource
     static void setupProperties(DynamicPropertyRegistry registry) {
@@ -159,4 +164,17 @@ class EmployeeApplicationIntegrationTest {
         assertEquals("sales", cachedEmployee.getDepartment());
     }
 
+    @Test
+    void addEmployee() {
+        var request = new NewEmployee("kendrick", "general affairs");
+        ResponseEntity<Employee> response = this.restTemplate.postForEntity(getTestBaseUrl(), request, Employee.class);
+        assertEquals("kendrick", response.getBody().getName());
+
+        // check postgres data
+        Employee found = employeeRepository.findByName(request.getName()).orElseThrow();
+
+        // @see src/test/resources/db/schema-postgresql.sql
+        assertEquals(101, found.getId());
+        assertEquals("general affairs", found.getDepartment());
+    }
 }

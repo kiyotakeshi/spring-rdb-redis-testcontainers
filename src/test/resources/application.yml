@@ -10,7 +10,7 @@ spring:
     init:
       platform: h2
       mode: always
-      dataLocations: classpath:db/data.sql
+#      dataLocations: classpath:db/schema-h2.sql
   flyway:
     enabled: false
 ## パラメータの値をログに表示 ex.) binding parameter [1] as [INTEGER] - [1]
