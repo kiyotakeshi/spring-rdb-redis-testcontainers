@@ -4,6 +4,7 @@ import com.kiyotakeshi.employee.entity.Employee;
 import com.kiyotakeshi.employee.entity.EmployeeRequest;
 import com.kiyotakeshi.employee.exception.ResourceNotFoundException;
 import com.kiyotakeshi.employee.repository.EmployeeRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -51,5 +52,13 @@ public class EmployeeServiceImpl implements EmployeeService {
         existingEmployee.setDepartment(request.getDepartment());
 
         return this.save(existingEmployee);
+    }
+
+    @Override
+    @CacheEvict(value = "employee",  key = "#id")
+    public void delete(int id) {
+        var existingEmployee = this.findEmployeeById(id);
+        System.out.println("deleting employee with name:" + existingEmployee.getName());
+        employeeRepository.delete(existingEmployee);
     }
 }

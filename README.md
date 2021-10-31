@@ -2,6 +2,19 @@
 
 ## WIP:
 
+## setup
+
+- run redis container
+
+```shell
+docker compose up -d
+```
+
+## run local
+
+- access [http://localhost:8081/swagger-ui/](http://localhost:8081/swagger-ui/)
+    - you can test api using Swagger UI
+
 ---
 ## redis playground
 

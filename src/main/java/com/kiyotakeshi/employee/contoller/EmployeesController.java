@@ -51,4 +51,10 @@ public class EmployeesController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteEmployee(@PathVariable int id) {
+        employeeService.delete(id);
+        return ResponseEntity.ok().build();
+    }
 }

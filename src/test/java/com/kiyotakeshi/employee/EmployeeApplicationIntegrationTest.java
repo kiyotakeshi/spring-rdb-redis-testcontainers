@@ -17,6 +17,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -31,8 +32,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
 @SpringBootTest(webEnvironment = RANDOM_PORT)
@@ -98,7 +98,6 @@ class EmployeeApplicationIntegrationTest {
     }
 
     // @see https://stackoverflow.com/questions/59372048/testcontainers-hikari-and-failed-to-validate-connection-org-postgresql-jdbc-pgc
-    // @DirtiesContext
     @Test
     void testPostgresConnection() throws SQLException {
         var hikariConfig = new HikariConfig();
@@ -114,10 +113,10 @@ class EmployeeApplicationIntegrationTest {
 
         // verify loading from test data
         ResultSet testData = performQuery(dataSource, "select * from employee");
-        assertEquals("taro", testData.getString("name"));
+        assertEquals("test-taro", testData.getString("name"));
         assertEquals("sales", testData.getString("department"));
         testData.next();
-        assertEquals("jiro", testData.getString("name"));
+        assertEquals("test-jiro", testData.getString("name"));
         assertEquals("human resources", testData.getString("department"));
         testData.close();
     }
@@ -128,12 +127,12 @@ class EmployeeApplicationIntegrationTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
 
         String expected = """
-                [{"id":1,"name":"taro","department":"sales"},{"id":2,"name":"jiro","department":"human resources"}]""";
+                [{"id":1,"name":"test-taro","department":"sales"},{"id":2,"name":"test-jiro","department":"human resources"}]""";
         assertEquals(expected, response.getBody());
 
         ResponseEntity<Employee[]> result = this.restTemplate.getForEntity(getTestBaseUrl(), Employee[].class);
         assertEquals(2, result.getBody().length);
-        assertEquals("taro", result.getBody()[0].getName());
+        assertEquals("test-taro", result.getBody()[0].getName());
 
 //        // if check cache @Cacheable at findEmployees()
 //        List<Employee> cachedEmployees = new ArrayList<>();
@@ -144,26 +143,26 @@ class EmployeeApplicationIntegrationTest {
 //                            e -> cachedEmployees.add(e)
 //                    );
 //        });
-//        assertEquals("taro", cachedEmployees.get(0).getName());
+//        assertEquals("test-taro", cachedEmployees.get(0).getName());
 //        assertEquals("sales", cachedEmployees.get(0).getDepartment());
-//        assertEquals("jiro", cachedEmployees.get(1).getName());
+//        assertEquals("test-jiro", cachedEmployees.get(1).getName());
 //        assertEquals("human resources", cachedEmployees.get(1).getDepartment());
     }
 
     @Test
     void getEmployee() {
-        int employeeId = 1;
-        ResponseEntity<Employee> response = this.restTemplate.getForEntity(getTestBaseUrl() + "/{id}", Employee.class, employeeId);
+        int requestId = 1;
+        ResponseEntity<Employee> response = this.restTemplate.getForEntity(getTestBaseUrl() + "/{id}", Employee.class, requestId);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(employeeId, response.getBody().getId());
-        assertEquals("taro", response.getBody().getName());
+        assertEquals(requestId, response.getBody().getId());
+        assertEquals("test-taro", response.getBody().getName());
         assertEquals("sales", response.getBody().getDepartment());
 
         // check redis cache
-        var cachedEmployee = (Employee) this.redisTemplate.opsForValue().get("employee::" + employeeId);
-        assertEquals(employeeId, cachedEmployee.getId());
-        assertEquals("taro", cachedEmployee.getName());
+        var cachedEmployee = (Employee) this.redisTemplate.opsForValue().get("employee::" + requestId);
+        assertEquals(requestId, cachedEmployee.getId());
+        assertEquals("test-taro", cachedEmployee.getName());
         assertEquals("sales", cachedEmployee.getDepartment());
     }
 
@@ -182,8 +181,9 @@ class EmployeeApplicationIntegrationTest {
     }
 
     @Test
+    @DirtiesContext
     void updateEmployee() {
-        int employeeId = 1;
+        int requestId = 1;
         var request = new EmployeeRequest("name-update", "vice president");
 
         // this.restTemplate.put(getTestBaseUrl() + "/{id}", request, 1);
@@ -192,18 +192,46 @@ class EmployeeApplicationIntegrationTest {
                 getTestBaseUrl() + "/{id}",
                 HttpMethod.PUT,
                 new HttpEntity<EmployeeRequest>(request),
-                Employee.class, employeeId);
+                Employee.class, requestId);
 
         assertEquals(request.getName(), response.getBody().getName());
 
         // check postgres
-        var fromDB = employeeRepository.findById(employeeId).orElseThrow();
+        var fromDB = employeeRepository.findById(requestId).orElseThrow();
         assertNotNull(fromDB);
         assertEquals(request.getDepartment(), fromDB.getDepartment());
 
         // check redis cache
-        var cachedEmployee = (Employee) this.redisTemplate.opsForValue().get("employee::" + employeeId);
+        var cachedEmployee = (Employee) this.redisTemplate.opsForValue().get("employee::" + requestId);
         assertEquals(request.getName(), cachedEmployee.getName());
         assertEquals(request.getDepartment(), cachedEmployee.getDepartment());
+    }
+
+    @Test
+    @DirtiesContext
+    void deleteEmployee() {
+        int requestId = 1;
+
+        ResponseEntity<Employee> response = this.restTemplate.getForEntity(getTestBaseUrl() + "/{id}", Employee.class, requestId);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        // check redis cache exist
+        var cachedEmployee = (Employee) this.redisTemplate.opsForValue().get("employee::" + requestId);
+        assertEquals(requestId, cachedEmployee.getId());
+
+        ResponseEntity<String> result = this.restTemplate.exchange(
+                getTestBaseUrl() + "/{id}",
+                HttpMethod.DELETE,
+                HttpEntity.EMPTY,
+                String.class, requestId);
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+
+        // check postgres
+        assertTrue(employeeRepository.findById(requestId).isEmpty());
+
+        // check redis cache evict
+        assertNull(this.redisTemplate.opsForValue().get("employee::" + requestId));
     }
 }
