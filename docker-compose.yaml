@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:11.10
+    container_name: employee-postgres
+    ports:
+      - 5432:5432
+    # if you want to persist data
+    volumes:
+      - ./.docker/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: employee
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    restart: always
+  redis:
+    image: redis:6.2.6
+    container_name: employee-redis
+    ports:
+      - 6379:6379
+    volumes:
+      - ./data/redis:/data
+# run as container
+#  employee:
+#    image: kiyotakeshi/employee:${ARTIFACT_VERSION}
+#    container_name: employee
+#    ports:
+#      - 8081:8081
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://employee-postgres:5432/employee
+#    depends_on:
+#      - postgres
