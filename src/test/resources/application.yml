@@ -3,6 +3,10 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: 'create-drop'
+    # @see https://stackoverflow.com/a/68086707
+    # insert into seats (id, name) values (100, 'okamoto'); nested exception is org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "SEATS" not found; SQL statement:
+    # @see https://spring.pleiades.io/spring-boot/docs/current/reference/html/howto.html#howto.data-initialization.using-basic-sql-scripts
+    # > EntityManagerFactory Bean が作成および初期化されるまで、データソースの初期化が延期されます。次に、schema.sql を使用して、Hibernate によって実行されるスキーマ作成に追加を行うことができ、data.sql を使用してそれを設定できます。
     defer-datasource-initialization: true
   datasource:
     url: jdbc:h2:mem:employee
@@ -10,7 +14,7 @@ spring:
     init:
       platform: h2
       mode: always
-#      dataLocations: classpath:db/schema-h2.sql
+#      dataLocations: classpath:db/data-h2.sql
   flyway:
     enabled: false
 ## パラメータの値をログに表示 ex.) binding parameter [1] as [INTEGER] - [1]
